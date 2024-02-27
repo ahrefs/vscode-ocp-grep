@@ -49,7 +49,6 @@ export async function activate(context: vscode.ExtensionContext) {
       if (!editor) return;
       const selectedText = editor.document.getText(editor.selection);
       const moduleName = getModuleName(editor.document.fileName);
-      const lookupStr = `${moduleName}.${selectedText}`;
 
       const rootPath = await getRootPath(vscode.workspace.workspaceFolders);
 
@@ -62,7 +61,16 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const command = `cd ${rootPath} && ${binary} "${lookupStr}"`;
+      const lookupStr = `${moduleName}.${selectedText}`;
+      const verifiedLookupStr = await vscode.window.showInputBox({
+        prompt: "Grep project",
+        value: lookupStr,
+        valueSelection: [moduleName.length, moduleName.length],
+      });
+
+      if (!verifiedLookupStr) return;
+
+      const command = `cd ${rootPath} && ${binary} "${verifiedLookupStr}"`;
 
       const results = await window.withProgress(
         {
