@@ -1,8 +1,6 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import path from "path";
-import { execSync } from "child_process";
+import { ExecException, execSync } from "child_process";
 import { ProgressLocation, window } from "vscode";
 
 let log = vscode.window.createOutputChannel("ocp-grep");
@@ -20,6 +18,12 @@ let getModuleName = (fileName: String) => {
   });
 };
 
+let getBinary = () => {
+  const config = vscode.workspace.getConfiguration("ocp-grep");
+
+  return config.get<string | undefined>("path");
+};
+
 export async function activate(context: vscode.ExtensionContext) {
   console.log("ocp-grep is now active!");
 
@@ -33,7 +37,15 @@ export async function activate(context: vscode.ExtensionContext) {
       const lookupStr = `${moduleName}.${selectedText}`;
 
       const rootPath = vscode.workspace.rootPath || "";
-      const command = `cd ${rootPath} && eval $(opam env) && ocp-grep "${lookupStr}"`;
+      const binary = getBinary();
+
+      if (!binary) {
+        vscode.window.showErrorMessage(
+          "ocp-grep: Binary path not found. Please set it in the settings."
+        );
+        return;
+      }
+      const command = `cd ${rootPath} && ${binary} --color=always "${lookupStr}"`;
 
       const results = await window.withProgress(
         {
@@ -44,14 +56,23 @@ export async function activate(context: vscode.ExtensionContext) {
         async (progress) => {
           progress.report({ increment: 0 });
 
-          let results = await execSync(command)
-            .toString()
-            .split("\n")
-            .filter((x) => x !== "");
+          try {
+            let results = await execSync(command)
+              .toString()
+              .split("\n")
+              .filter((x) => x !== "")
+              .map((x) => x.replace(/\x1b\[[0-9;]*m/g, ""));
 
-          progress.report({ increment: 100 });
+            progress.report({ increment: 100 });
 
-          return results;
+            return results;
+          } catch (e: any) {
+            log.appendLine(e.message);
+            vscode.window.showErrorMessage(
+              "ocp-grep: An error occured. Check the logs for more details."
+            );
+            return [];
+          }
         }
       );
 
@@ -85,5 +106,4 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
 export async function deactivate() {}
