@@ -21,6 +21,28 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "ocaml",
+        "aliases": [
+          "OCaml"
+        ],
+        "extensions": [
+          ".ml",
+          ".mli"
+        ]
+      },
+      {
+        "id": "reason",
+        "aliases": [
+          "Reason"
+        ],
+        "extensions": [
+          ".re",
+          ".rei"
+        ]
+      }
+    ],
     "commands": [
       {
         "command": "ocp-grep.findReferences",
