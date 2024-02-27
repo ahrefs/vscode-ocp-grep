@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import path from "path";
-import { ExecException, execSync } from "child_process";
-import { ProgressLocation, window } from "vscode";
+import { execSync } from "child_process";
+import { WorkspaceFolder, ProgressLocation, window } from "vscode";
 
 let log = vscode.window.createOutputChannel("ocp-grep");
 
@@ -24,6 +24,21 @@ let getBinary = () => {
   return config.get<string | undefined>("path");
 };
 
+async function getRootPath(
+  workspaceFolders: readonly WorkspaceFolder[] | undefined
+) {
+  if (!workspaceFolders) return "";
+
+  if (workspaceFolders.length === 1) {
+    return workspaceFolders[0].uri.fsPath;
+  }
+
+  const workspaceFolder = await vscode.window.showWorkspaceFolderPick();
+  if (!workspaceFolder) return "";
+
+  return workspaceFolder.uri.fsPath;
+}
+
 export async function activate(context: vscode.ExtensionContext) {
   console.log("ocp-grep is now active!");
 
@@ -36,7 +51,8 @@ export async function activate(context: vscode.ExtensionContext) {
       const moduleName = getModuleName(editor.document.fileName);
       const lookupStr = `${moduleName}.${selectedText}`;
 
-      const rootPath = vscode.workspace.rootPath || "";
+      const rootPath = await getRootPath(vscode.workspace.workspaceFolders);
+
       const binary = getBinary();
 
       if (!binary) {
@@ -45,7 +61,8 @@ export async function activate(context: vscode.ExtensionContext) {
         );
         return;
       }
-      const command = `cd ${rootPath} && ${binary} --color=always "${lookupStr}"`;
+
+      const command = `cd ${rootPath} && ${binary} "${lookupStr}"`;
 
       const results = await window.withProgress(
         {
@@ -57,11 +74,10 @@ export async function activate(context: vscode.ExtensionContext) {
           progress.report({ increment: 0 });
 
           try {
-            let results = await execSync(command)
+            let results = execSync(command)
               .toString()
               .split("\n")
-              .filter((x) => x !== "")
-              .map((x) => x.replace(/\x1b\[[0-9;]*m/g, ""));
+              .filter((x) => x !== "");
 
             progress.report({ increment: 100 });
 
