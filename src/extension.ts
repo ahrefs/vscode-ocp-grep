@@ -79,8 +79,6 @@ export async function activate(context: vscode.ExtensionContext) {
           cancellable: false,
         },
         async (progress) => {
-          progress.report({ increment: 0 });
-
           try {
             let results = execSync(command)
               .toString()
