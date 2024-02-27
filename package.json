@@ -1,7 +1,16 @@
 {
   "name": "ocp-grep",
   "displayName": "ocp-grep",
-  "description": "",
+  "author": {
+    "name": "Rusty Key",
+    "email": "rusty.key@ahrefs.com"
+  },
+  "publisher": "rustykey",
+  "description": "POC of vscode extension that uses `ocp-grep` to quickly find usages of selected ident in OCaml code",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ahrefs/vscode-ocp-grep"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.86.0"
